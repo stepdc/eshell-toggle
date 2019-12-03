@@ -66,7 +66,7 @@
   :type 'directory
   :group 'eshell-toggle)
 
-(defcustom eshell-toggle-use-projectile-root
+(defcustom eshell-toggle-use-project-root
   nil
   "Open eshell at projectile's project root if not nil."
   :type '(choice (const :tag "Disabled" nil)
@@ -109,21 +109,30 @@
                 win))
 	 (window-list)))
 
+(defun eshell-toggle-project-root ()
+  (if (and
+       (fboundp 'projectile-project-p)
+       (fboundp 'projectile-project-root)
+       (projectile-project-p))
+      (projectile-project-root)
+    default-directory))
+
+(defvar eshell-toggle--dir-function 'eshell-toggle-project-root)
 
 (defun eshell-toggle--get-directory ()
   "Return default directory for current buffer."
   (or
-   (if eshell-toggle-use-projectile-root
+   (if eshell-toggle-use-project-root
        (condition-case nil
-           (projectile-project-root)
+           (eshell-toggle--dir-function)
          (error nil)))
    eshell-toggle-default-directory
    default-directory))
 
 (defun eshell-toggle--make-buffer-name ()
   "Generate toggle buffer name."
-  (if eshell-toggle-use-projectile-root
-      (concat "*et" eshell-toggle-name-separator (projectile-project-name) "*")
+  (if eshell-toggle-use-project-root
+      (concat "*et" eshell-toggle-name-separator (eshell-toggle-project-root) "*")
     (let* ((dir (eshell-toggle--get-directory))
            (name (string-join (split-string dir "/") eshell-toggle-name-separator))
            (buf-name (concat "*et" name "*")))
